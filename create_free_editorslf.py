@@ -36,7 +36,7 @@ def main():
             base_name, _ = os.path.splitext(file)
             with source_fs.open(file, 'rb') as source, target_fs.open(file, 'wb') as target:
                 ja2_images = load_8bit_sti(source)
-                replacement_path = base_name + '.png'
+                replacement_path = base_name + '.gif'
                 replacement_file_exists = replacement_fs.isfile(replacement_path)
                 replacement_dir = file
                 replacement_dir_exists = replacement_fs.isdir(replacement_dir)
@@ -47,7 +47,7 @@ def main():
                     ja2_images.images[0]._image = replacement_img
                 elif len(ja2_images) > 1 and replacement_dir_exists:
                     for i in range(len(ja2_images)):
-                        replacement_path = replacement_dir + '/{}.png'.format(i)
+                        replacement_path = replacement_dir + '/{}.gif'.format(i)
 
                         print("Replacing {0} with {1}".format(file, replacement_path))
                         replacement_img = Image.open(replacement_fs.open(replacement_path, 'rb'))
