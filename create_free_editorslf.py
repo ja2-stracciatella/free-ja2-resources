@@ -1,12 +1,87 @@
 import os
 import argparse
+import json
 from PIL import Image
+from ja2py.content import Images8Bit, SubImage8Bit
 from ja2py.fileformats import load_8bit_sti, save_8bit_sti, SlfFS, BufferedSlfFS
 from fs.osfs import OSFS
 
+def same_palette(subimages):
+    """Returns true if all the images use the same palette"""
+    palette = None
+    for img in subimages:
+        if img is None:
+            return False # empty image
+        if img.mode != 'P':
+            return False # no palette
+        if palette == None:
+            palette = img.palette
+        elif palette != img.palette:
+            return False # different palette
+    return True
+
+def normalize_subimages(subimages):
+    """Make sure all subimages have the same palette."""
+
+    if same_palette(subimages):
+        print("same palette")
+        return subimages
+
+    # paste in RGB canvas
+    color = None
+    boxes = list()
+    mode = 'RGB'
+    for img in subimages:
+        if img.mode == 'RGBA' or (img.mode == 'P' and img.palette.mode == 'RGBA'):
+            print("WARNING ja2py does not support alpha channel in STIs, alpha channel will be lost")
+        if color is None and img.width > 0 and img.height > 0:
+            pass # TODO how do I get a color?
+        if len(boxes) > 0:
+            # place at the right of the last image
+            x = boxes[-1][2]
+            boxes.append((x, 0, x + img.width, img.height))
+        else:
+            # place at origin
+            boxes.append(img.getbbox())
+    if color is None:
+        color = 0 # default of Image.new
+    width = max([box[2] for box in boxes])
+    height = max([box[3] for box in boxes])
+    canvas = Image.new(mode, (width, height), color)
+    for i in range(len(boxes)):
+        canvas.paste(subimages[i], boxes[i])
+
+    # convert to palette
+    assert canvas.getcolors(256) is not None, "too many palette colors"
+    canvas = canvas.convert(mode='P', palette='ADAPTATIVE', colors=256)
+    subimages = [canvas.crop(box).copy() for box in boxes]
+    return subimages
+
+def create_sti(fs, spec):
+    # get all subimages
+    subimages = list()
+    default_path = spec.get('image')
+    for subimage_spec in spec.get('subimages', []):
+        path = subimage_spec.get('image', default_path)
+        assert path is not None, "empty subimages not supported"
+        with fs.open(path, 'rb') as f:
+            img = Image.open(f).copy()
+        box = subimage_spec.get('crop') # left, upper, right, and lower pixel coordinate
+        if box:
+            img = img.crop(tuple(box))
+        subimages.append(img)
+    assert len(subimages) > 0, "0 subimages not supported"
+    if not same_palette(subimages):
+        subimages = normalize_subimages(subimages)
+    # create sti
+    palette = subimages[0].palette
+    subimages = [SubImage8Bit(img) for img in subimages]
+    sti = Images8Bit(subimages, palette)
+    return sti
+
 def main():
     parser = argparse.ArgumentParser(description='Create free editor.slf')
-    parser.add_argument('original', help="Original editor.slf")
+    parser.add_argument('--original', help="Original editor.slf")
     parser.add_argument(
         '-o',
         '--output',
@@ -18,6 +93,28 @@ def main():
     if not os.path.exists(os.path.dirname(args.output)):
         os.makedirs(os.path.dirname(args.output))
 
+    if args.original is None:
+        # create editor.slf exclusively from the contents of the editor directory
+        source_fs = OSFS('editor')
+        target_fs = BufferedSlfFS()
+        target_fs.library_name = "Free EDITOR.SLF"
+        target_fs.library_path = "editor\\"
+        target_fs.version = 0x0200 # 2.0?
+        target_fs.sort = 0xffff # sorted?
+        for path in source_fs.walkfiles():
+            if path.endswith(".json"):
+                print("editor" + path)
+                # build
+                with source_fs.open(path, 'rb') as f:
+                    spec = json.load(f)
+                sti = create_sti(source_fs, spec)
+                # write
+                path = path[:-5]
+                with target_fs.open(path, 'wb') as f:
+                    save_8bit_sti(sti, f)
+        return
+
+    # create editor.slf by replacing images in the original editor.slf
     target_fs = BufferedSlfFS()
     replacement_fs = OSFS('editor')
     with open(args.original, 'rb') as source_file:
