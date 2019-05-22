@@ -62,14 +62,14 @@ def normalize_subimages(subimages):
     subimages = [canvas.crop(box).copy() for box in boxes]
     return subimages
 
-def create_8bit_sti(fs, spec):
+def create_8bit_sti(fs, spec, dirpath):
     """
     Create an 8bit sti (palette) matching the spec.
 
     Spec in json:
         {
             "comment": "this is a sample spec",
-            "comment-image": "image at this level represents the default image",
+            "comment-image": "image at this level represents the default image, paths are relative to the directory of the spec",
             "comment-subimages": "subimages describes how to create each subimage",
             "image": "path/to/image.gif",
             "subimages": [
@@ -101,7 +101,7 @@ def create_8bit_sti(fs, spec):
             # open existing image
             path = subimage_spec.get('image', default_path)
             assert path is not None, "subimage is empty"
-            with fs.open(path, 'rb') as f:
+            with fs.open(dirpath + path, 'rb') as f:
                 img = Image.open(f).copy()
         # crop image (optional)
         box = subimage_spec.get('crop') # (left, upper, right, lower) - pixel coordinates
@@ -145,7 +145,9 @@ def main():
                 # build
                 with source_fs.open(path, 'rb') as f:
                     spec = json.loads(f.read().decode("utf-8"))
-                sti = create_8bit_sti(source_fs, spec)
+                dirpath = path[:path.rindex('/') + 1]
+                assert dirpath == "/", "BufferedSlfFS does not support makedir"
+                sti = create_8bit_sti(source_fs, spec, dirpath)
                 # write
                 path = path[:-5]
                 with target_fs.open(path, 'wb') as f:
