@@ -1,10 +1,15 @@
 import os
 import argparse
 import json
+import sys
 from PIL import Image
 from ja2py.content import Images8Bit, SubImage8Bit
 from ja2py.fileformats import load_8bit_sti, save_8bit_sti, SlfFS, BufferedSlfFS
 from fs.osfs import OSFS
+
+if sys.version_info[0] != 3:
+    print("This script requires Python 3")
+    exit(1)
 
 def same_palette(subimages):
     """Returns true if all the images use the same palette"""
@@ -106,12 +111,15 @@ def main():
                 print("editor" + path)
                 # build
                 with source_fs.open(path, 'rb') as f:
-                    spec = json.load(f)
+                    spec = json.loads(f.read().decode("utf-8"))
                 sti = create_sti(source_fs, spec)
                 # write
                 path = path[:-5]
                 with target_fs.open(path, 'wb') as f:
                     save_8bit_sti(sti, f)
+
+        with open(args.output, 'wb') as target_file:
+            target_fs.save(target_file)
         return
 
     # create editor.slf by replacing images in the original editor.slf
