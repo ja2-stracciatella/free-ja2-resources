@@ -19,7 +19,7 @@ def same_palette(subimages):
             return False # empty image
         if img.mode != 'P':
             return False # no palette
-        if palette == None:
+        if palette is None:
             palette = img.palette
         elif palette != img.palette:
             return False # different palette
@@ -62,16 +62,30 @@ def normalize_subimages(subimages):
     subimages = [canvas.crop(box).copy() for box in boxes]
     return subimages
 
-def create_sti(fs, spec):
+def create_8bit_sti(fs, spec):
     # get all subimages
     subimages = list()
     default_path = spec.get('image')
     for subimage_spec in spec.get('subimages', []):
-        path = subimage_spec.get('image', default_path)
-        assert path is not None, "empty subimages not supported"
-        with fs.open(path, 'rb') as f:
-            img = Image.open(f).copy()
-        box = subimage_spec.get('crop') # left, upper, right, and lower pixel coordinate
+        new = subimage_spec.get('new') # mode, (width, height), color=0 - parameters of Image.new, color is optional
+        if new is not None:
+            # create new image
+            if isinstance(new, dict):
+                # with names arguments
+                img = Image.new(**new)
+            elif isinstance(new, list):
+                # with positional arguments
+                img = Image.new(*new)
+            else:
+                assert False, "invalid new argument {0}".format(new)
+        else:
+            # open existing image
+            path = subimage_spec.get('image', default_path)
+            assert path is not None, "subimage is empty"
+            with fs.open(path, 'rb') as f:
+                img = Image.open(f).copy()
+        # crop image (optional)
+        box = subimage_spec.get('crop') # (left, upper, right, lower) - pixel coordinates
         if box:
             img = img.crop(tuple(box))
         subimages.append(img)
@@ -112,7 +126,7 @@ def main():
                 # build
                 with source_fs.open(path, 'rb') as f:
                     spec = json.loads(f.read().decode("utf-8"))
-                sti = create_sti(source_fs, spec)
+                sti = create_8bit_sti(source_fs, spec)
                 # write
                 path = path[:-5]
                 with target_fs.open(path, 'wb') as f:
