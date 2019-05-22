@@ -51,7 +51,7 @@ def normalize_subimages(subimages):
         canvas.paste(subimages[i], boxes[i])
 
     # convert to RGB palette
-    palette = [ transparent[:3] ] # ja2py ETRLE assumes palette index 0 is transparent
+    palette = [ transparent[:3] ] # ja2py ETRLE assumes palette index 0 is transparent?
     index = { transparent: 0 }
     data = []
     for rgba in canvas.getdata():
@@ -127,8 +127,7 @@ def create_8bit_sti(fs, spec, dirpath):
             img = img.crop(tuple(box))
         subimages.append(img)
     assert len(subimages) > 0, "0 subimages not supported"
-    if not same_palette(subimages):
-        subimages = normalize_subimages(subimages)
+    subimages = normalize_subimages(subimages)
     # create sti
     palette = subimages[0].palette
     subimages = [SubImage8Bit(img) for img in subimages]
