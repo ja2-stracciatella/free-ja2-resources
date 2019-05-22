@@ -32,15 +32,11 @@ def normalize_subimages(subimages):
         print("same palette")
         return subimages
 
-    # paste in RGB canvas
-    color = None
+    # paste to RGBA canvas
+    transparent = (0, 0, 0, 0) # ja2py STI assumes color 0 is transparent?
     boxes = list()
-    mode = 'RGB'
+    mode = 'RGBA'
     for img in subimages:
-        if img.mode == 'RGBA' or (img.mode == 'P' and img.palette.mode == 'RGBA'):
-            print("WARNING ja2py does not support alpha channel in STIs, alpha channel will be lost")
-        if color is None and img.width > 0 and img.height > 0:
-            pass # TODO how do I get a color?
         if len(boxes) > 0:
             # place at the right of the last image
             x = boxes[-1][2]
@@ -48,17 +44,39 @@ def normalize_subimages(subimages):
         else:
             # place at origin
             boxes.append(img.getbbox())
-    if color is None:
-        color = 0 # default of Image.new
     width = max([box[2] for box in boxes])
     height = max([box[3] for box in boxes])
-    canvas = Image.new(mode, (width, height), color)
+    canvas = Image.new(mode, (width, height), transparent)
     for i in range(len(boxes)):
         canvas.paste(subimages[i], boxes[i])
 
-    # convert to palette
-    assert canvas.getcolors(256) is not None, "too many palette colors"
-    canvas = canvas.convert(mode='P', palette='ADAPTATIVE', colors=256)
+    # convert to RGB palette
+    palette = [ transparent[:3] ] # ja2py ETRLE assumes palette index 0 is transparent
+    index = { transparent: 0 }
+    data = []
+    for rgba in canvas.getdata():
+        value = index.get(rgba)
+        if value is None:
+            if rgba[3] < 255:
+                value = transparent # TODO maybe opaque color if alpha >= X?
+                print("WARNING ja2py STI does not support alpha channel, converting all {0} to {1}".format(rgba, value))
+                index[rgba] = value
+            else:
+                value = len(palette)
+                assert value < 256, "too many colors for an exact match"
+                palette.append(rgba[:3])
+                index[rgba] = value
+        if isinstance(value, list):
+            value = index[value] # was converted to another value
+            assert not isinstance(value, list), "double convertion"
+        data.append(value)
+    palette = [x for rgb in palette for x in rgb]
+    palette += [0] * (256 * 3 - len(palette)) # palette must have exactly 256 values
+    canvas = Image.new('P', (width, height), 0)
+    canvas.putpalette(palette)
+    canvas.putdata(data)
+
+    # get subimages
     subimages = [canvas.crop(box).copy() for box in boxes]
     return subimages
 
