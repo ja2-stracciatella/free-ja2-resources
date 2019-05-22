@@ -63,6 +63,25 @@ def normalize_subimages(subimages):
     return subimages
 
 def create_8bit_sti(fs, spec):
+    """
+    Create an 8bit sti (palette) matching the spec.
+
+    Spec in json:
+        {
+            "comment": "this is a sample spec",
+            "comment-image": "image at this level represents the default image",
+            "comment-subimages": "subimages describes how to create each subimage",
+            "image": "path/to/image.gif",
+            "subimages": [
+                { "comment": "default image" },
+                { "crop": [0, 0, 30, 30], "comment": "section of the default image" },
+                { "image": "path/to/other/image.gif", "comment": "image" },
+                { "image": "path/to/other/image.gif", "crop": [0, 0, 30, 30], "comment": "section of the image" },
+                { "new": ["RGB", [30, 30], "black"], "comment": "new image with positional arguments, see Image.new" },
+                { "new": {"mode": "RGB", "size": [30, 30], "color": "black"}, "comment": "new image with named arguments" }
+            ]
+        }
+    """
     # get all subimages
     subimages = list()
     default_path = spec.get('image')
