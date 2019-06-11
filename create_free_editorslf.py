@@ -35,17 +35,13 @@ def create_free_editorslf():
     source_fs = OSFS('editor')
     for path in source_fs.walkfiles():
         if path.endswith(".py"):
-            try:
-                # run python file inside the editor directory
-                name = ("editor" + path)[:-3].replace("/", ".")
-                spec = spec_from_file_location(name, source_fs.getsyspath(path))
-                module = module_from_spec(spec)
-                spec.loader.exec_module(module)
-                module.add_to_free_editorslf(source_fs, target_fs)
-            except Exception as ex:
-                print(path, ex)
-                print("continuing...")
-    for path in target_fs.walkfiles():
+            # run python file inside the editor directory
+            name = ("editor" + path)[:-3].replace("/", ".")
+            spec = spec_from_file_location(name, source_fs.getsyspath(path))
+            module = module_from_spec(spec)
+            spec.loader.exec_module(module)
+            module.add_to_free_editorslf(source_fs, target_fs)
+    for path in sorted(target_fs.walkfiles()):
         print(path)
     return target_fs
 
