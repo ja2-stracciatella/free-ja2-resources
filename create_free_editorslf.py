@@ -1,12 +1,54 @@
 import os
 import argparse
-from PIL import Image
-from ja2py.fileformats import load_8bit_sti, save_8bit_sti, SlfFS, BufferedSlfFS
+import json
+import sys
+from importlib.util import spec_from_file_location, module_from_spec
 from fs.osfs import OSFS
+from ja2py.content import Images8Bit, SubImage8Bit
+from ja2py.fileformats import load_8bit_sti, save_8bit_sti, SlfFS, BufferedSlfFS
+
+
+if sys.version_info[0] < 3 or sys.version_info[1] < 5:
+    print("This script requires Python>=3.5")
+    exit(1)
+
+
+def create_free_editorslf():
+    """
+    Creates a BufferedSlfFS exclusively from the contents of the editor directory.
+
+    The python files inside the editor directory are responsible for creating the STI images and adding them to the SLF.
+
+    Each file should contain the function:
+    ```
+    def add_to_free_editorslf(source_fs, target_fs):
+        pass
+    ```
+    source_fs is the source OSFS (editor directory)
+    target_fs is the target BufferedSlfFS
+    """
+    target_fs = BufferedSlfFS()
+    target_fs.library_name = "Free EDITOR.SLF"
+    target_fs.library_path = "editor\\"
+    target_fs.version = 0x0200 # 2.0
+    target_fs.sort = 0 # BufferedSlfFS does not guarantee that the entries are sorted
+    source_fs = OSFS('editor')
+    for path in source_fs.walkfiles():
+        if path.endswith(".py"):
+            # run python file inside the editor directory
+            name = ("editor" + path)[:-3].replace("/", ".")
+            spec = spec_from_file_location(name, source_fs.getsyspath(path))
+            module = module_from_spec(spec)
+            spec.loader.exec_module(module)
+            module.add_to_free_editorslf(source_fs, target_fs)
+    for path in sorted(target_fs.walkfiles()):
+        print(path)
+    return target_fs
+
 
 def main():
     parser = argparse.ArgumentParser(description='Create free editor.slf')
-    parser.add_argument('original', help="Original editor.slf")
+    parser.add_argument('--original', help="Original editor.slf")
     parser.add_argument(
         '-o',
         '--output',
@@ -18,6 +60,13 @@ def main():
     if not os.path.exists(os.path.dirname(args.output)):
         os.makedirs(os.path.dirname(args.output))
 
+    if args.original is None:
+        target_fs = create_free_editorslf()
+        with open(args.output, 'wb') as target_file:
+            target_fs.save(target_file)
+        return
+
+    # create editor.slf by replacing images in the original editor.slf
     target_fs = BufferedSlfFS()
     replacement_fs = OSFS('editor')
     with open(args.original, 'rb') as source_file:

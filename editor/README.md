@@ -45,7 +45,7 @@ The following list was created from the list of image sizes provided by @selaux 
 | DOWNGRID.STI         | 30x30          | button, "Draw ground textures" |
 | EAST.STI             | 30x20          | button, "Specify east point" |
 | ERASER.STI           | 30x30          | button, erase |
-| EDITMODEBG.STI       | 640x120        | not used, has 5 images |
+| EDITMODEBG.STI       | 640x120        | not used, image? |
 | EXCLAMATION.STI      | 4x20           | image |
 | EXITGRIDBUT.STI      | 30x30          | button, "Add exit grids" |
 | EXITGRIDQ.STI        | 30x30          | not used, has 5 images: 0+1+2+3+4=30x30 (button?) |
@@ -60,7 +60,7 @@ The following list was created from the list of image sizes provided by @selaux 
 | KILLTILEROOM.STI     | 30x30          | button, "Erase room numbers" |
 | LEFTARROW.STI        | 30x20          | button, left arrow |
 | LEFTSCROLL.STI       | 49x39          | button, scroll left |
-| LGDOWNARROW.STI      | 28x41          | button, scrool down |
+| LGDOWNARROW.STI      | 28x41          | image button, scrool down |
 | LGUPARROW.STI        | 28x41          | image button, scroll up |
 | LIGHT.STI            | 30x30          | button, "Add ambient light source", has 1 extra image: 5=3x2 |
 | LIGHT2.STI           | 30x30?         | not used, has 6 images: 0+1+2+3+4=30x30 (button?) and 5=3x2 |
