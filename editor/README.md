@@ -82,7 +82,7 @@ The following list was created from the list of image sizes provided by @selaux 
 | NUM3.STI             | 30x30          | not used, has 6 images: 0+1+2+3+4=30x30 (button?) and 5=3x2 |
 | NUM4.STI             | 30x30          | not used, has 6 images: 0+1+2+3+4=30x30 (button?) and 5=3x2 |
 | OK.STI               | 30x30          | full button, ok, has 1 extra image: 5=398x130 |
-| OMERTA.STI           | 212x212        | image, omerta map? |
+| OMERTA.STI           | 212x212        | image, map of Arulco (16x16 grid, 2 pixel border) |
 | PAINT.STI            | 30x30          | button, "Cycle brush size" |
 | RADIOBUTTON.STI      | 12x12          | radio button |
 | RIGHTARROW.STI       | 30x20          | button, right arrow |
