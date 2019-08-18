@@ -13,7 +13,7 @@ if sys.version_info[0] < 3 or sys.version_info[1] < 5:
     exit(1)
 
 
-def create_free_editorslf():
+def create_free_editorslf(name):
     """
     Creates a BufferedSlfFS exclusively from the contents of the editor directory.
 
@@ -28,7 +28,7 @@ def create_free_editorslf():
     target_fs is the target BufferedSlfFS
     """
     target_fs = BufferedSlfFS()
-    target_fs.library_name = "Free EDITOR.SLF"
+    target_fs.library_name = name or "Free editor.slf"
     target_fs.library_path = "editor\\"
     target_fs.version = 0x0200 # 2.0
     target_fs.sort = 0 # BufferedSlfFS does not guarantee that the entries are sorted
@@ -55,13 +55,14 @@ def main():
         default='build/editor.slf',
         help="Where to store the created slf file"
     )
+    parser.add_argument('--name', help="Library name")
     args = parser.parse_args()
 
     if not os.path.exists(os.path.dirname(args.output)):
         os.makedirs(os.path.dirname(args.output))
 
     if args.original is None:
-        target_fs = create_free_editorslf()
+        target_fs = create_free_editorslf(args.name)
         with open(args.output, 'wb') as target_file:
             target_fs.save(target_file)
         return
@@ -72,7 +73,7 @@ def main():
     with open(args.original, 'rb') as source_file:
         source_fs = SlfFS(source_file)
 
-        target_fs.library_name = source_fs.library_name
+        target_fs.library_name = args.name or source_fs.library_name
         target_fs.library_path = source_fs.library_path
         target_fs.version = source_fs.version
         target_fs.sort = source_fs.sort
