@@ -2,6 +2,7 @@ import os
 import argparse
 import json
 import sys
+import hashlib
 from importlib.util import spec_from_file_location, module_from_spec
 from fs.osfs import OSFS
 from ja2py.content import Images8Bit, SubImage8Bit
@@ -46,6 +47,17 @@ def create_free_editorslf(name):
     return target_fs
 
 
+def generate_md5_file(slf_filename):
+    m = hashlib.md5()
+    with open(slf_filename, "rb") as f:
+        m.update(f.read())
+    md5_filename = slf_filename + ".md5"
+    md5 = m.hexdigest()
+    with open(md5_filename, "wb") as f:
+        f.write(bytes(md5, "utf-8"))
+    print("MD5: %s" % md5)
+
+
 def main():
     parser = argparse.ArgumentParser(description='Create free editor.slf')
     parser.add_argument('--original', help="Original editor.slf")
@@ -65,6 +77,7 @@ def main():
         target_fs = create_free_editorslf(args.name)
         with open(args.output, 'wb') as target_file:
             target_fs.save(target_file)
+        generate_md5_file(args.output)
         return
 
     # create editor.slf by replacing images in the original editor.slf
@@ -113,6 +126,7 @@ def main():
 
     with open(args.output, 'wb') as target_file:
         target_fs.save(target_file)
+    generate_md5_file(args.output)
 
 
 if __name__ == "__main__":
