@@ -1,2 +1,2 @@
 -e git+https://github.com/ja2-stracciatella/ja2-open-toolset.git#egg=ja2py
-numpy==1.21
+numpy==1.22.0
